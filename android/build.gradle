@@ -1,23 +1,23 @@
 buildscript {
     repositories {
         jcenter()
-        google()
+        //google()
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.0'
+        classpath 'com.android.tools.build:gradle:2.3.3'
     }
 }
 
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.1"
+    compileSdkVersion 26
+    buildToolsVersion "26.0.2"
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 22
+        targetSdkVersion 26
         versionCode 1
         versionName "1.0"
     }
@@ -28,10 +28,11 @@ android {
 
 repositories {
     mavenCentral()
-    google()
+    //google()
 }
 
 dependencies {
-    implementation 'com.braintreepayments.api:drop-in:3.+'
-    implementation 'com.facebook.react:react-native:+'
+    compile 'com.braintreepayments.api:drop-in:3.+'
+    compile 'com.facebook.react:react-native:+'
+    compile 'com.google.android.gms:play-services-wallet:11.4.0'
 }

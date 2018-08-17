@@ -17,6 +17,9 @@ import com.braintreepayments.api.dropin.DropInResult;
 import com.braintreepayments.api.models.PaymentMethodNonce;
 import com.braintreepayments.api.models.CardNonce;
 import com.braintreepayments.api.models.ThreeDSecureInfo;
+import com.braintreepayments.api.models.GooglePaymentRequest;
+import com.google.android.gms.wallet.TransactionInfo;
+import com.google.android.gms.wallet.WalletConstants;
 
 public class RNBraintreeDropInModule extends ReactContextBaseJavaModule {
 
@@ -46,6 +49,20 @@ public class RNBraintreeDropInModule extends ReactContextBaseJavaModule {
     }
 
     DropInRequest dropInRequest = new DropInRequest().clientToken(options.getString("clientToken"));
+
+    dropInRequest.collectDeviceData(true);
+
+    if(options.getBoolean("googlePay")){
+      GooglePaymentRequest googlePaymentRequest = new GooglePaymentRequest()
+        .transactionInfo(TransactionInfo.newBuilder()
+          .setTotalPrice(options.getString("orderTotal"))
+          .setTotalPriceStatus(WalletConstants.TOTAL_PRICE_STATUS_FINAL)
+          .setCurrencyCode(options.getString("currencyCode"))
+          .build());
+
+      dropInRequest.googlePaymentRequest(googlePaymentRequest);
+    }
+
 
     if (options.hasKey("threeDSecure")) {
       final ReadableMap threeDSecureOptions = options.getMap("threeDSecure");
@@ -77,6 +94,7 @@ public class RNBraintreeDropInModule extends ReactContextBaseJavaModule {
       if (resultCode == Activity.RESULT_OK) {
         DropInResult result = data.getParcelableExtra(DropInResult.EXTRA_DROP_IN_RESULT);
         PaymentMethodNonce paymentMethodNonce = result.getPaymentMethodNonce();
+        String deviceData = result.getDeviceData();
 
         if (isVerifyingThreeDSecure && paymentMethodNonce instanceof CardNonce) {
           CardNonce cardNonce = (CardNonce) paymentMethodNonce;
@@ -86,10 +104,10 @@ public class RNBraintreeDropInModule extends ReactContextBaseJavaModule {
           } else if (!threeDSecureInfo.isLiabilityShifted()) {
             mPromise.reject("3DSECURE_LIABILITY_NOT_SHIFTED", "3D Secure liability was not shifted");
           } else {
-            resolvePayment(paymentMethodNonce);
+            resolvePayment(paymentMethodNonce, deviceData);
           }
         } else {
-          resolvePayment(paymentMethodNonce);
+          resolvePayment(paymentMethodNonce, deviceData);
         }
       } else if (resultCode == Activity.RESULT_CANCELED) {
         mPromise.reject("USER_CANCELLATION", "The user cancelled");
@@ -102,12 +120,13 @@ public class RNBraintreeDropInModule extends ReactContextBaseJavaModule {
     }
   };
 
-  private final void resolvePayment(PaymentMethodNonce paymentMethodNonce) {
+  private final void resolvePayment(PaymentMethodNonce paymentMethodNonce, String deviceData) {
     WritableMap jsResult = Arguments.createMap();
     jsResult.putString("nonce", paymentMethodNonce.getNonce());
     jsResult.putString("type", paymentMethodNonce.getTypeLabel());
     jsResult.putString("description", paymentMethodNonce.getDescription());
     jsResult.putBoolean("isDefault", paymentMethodNonce.isDefault());
+    jsResult.putString("deviceData", deviceData);
 
     mPromise.resolve(jsResult);
   }
